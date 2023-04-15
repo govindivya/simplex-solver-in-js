@@ -1,0 +1,15 @@
+{
+  "name": "lpp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "simplex.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mathjs": "^11.8.0"
+  }
+}
