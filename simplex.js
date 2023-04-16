@@ -223,7 +223,7 @@ function pivot(N, B, A, b, c, artificial) {
     for (var j = 0; j < A[0].length; j++) {
         var z_sum = '0';
         for (var i = 0; i < A.length; i++) {
-            z_sum = fractional_string(mathjs.fraction(mathjs.parse("".concat(z_sum, "+").concat(A[i][j], "*").concat(c[B[i]])).evaluate()));
+            z_sum = fractional_string(mathjs.fraction(mathjs.parse("(".concat(z_sum, ")+(").concat(A[i][j], ")*(").concat(c[B[i]], ")")).evaluate()));
         }
         zj.push(z_sum);
     }
@@ -260,34 +260,40 @@ function pivot(N, B, A, b, c, artificial) {
     A.forEach(function (row, ind) {
         if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0) {
             min_ratio_index = ind;
-            min_ratio_value = "".concat(b[ind], "/").concat(A[ind][max_col_index]);
+            min_ratio_value = "(".concat(b[ind], ")/(").concat(A[ind][max_col_index], ")");
         }
     });
     if (min_ratio_index == -1) {
         throw Error("UNBOUNDED SOLUTION");
     }
     // // checking for min positive ratio
+    // console.log("A");
+    // console.table(A);
     A.forEach(function (row, ind) {
         if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse("".concat(b[ind], "/").concat(row[max_col_index])).evaluate()) == 1)) {
             min_ratio_index = ind;
-            min_ratio_value = "".concat(b[min_ratio_index], "/").concat(A[min_ratio_index][max_col_index]);
+            min_ratio_value = "(".concat(b[min_ratio_index], ")/(").concat(A[min_ratio_index][max_col_index], ")");
         }
     });
     var pivot_element = A[min_ratio_index][max_col_index];
     var leaving_var = B[min_ratio_index];
     A1 = Array.from(A);
     b1 = __spreadArray([], b, true);
-    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse("".concat(b[min_ratio_index], "/").concat(pivot_element)).evaluate()));
+    console.log("Before");
+    console.log(min_ratio_index, max_col_index);
+    console.table(A1);
+    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[min_ratio_index], ")/(").concat(pivot_element, ")")).evaluate()));
     for (var i = 0; i < A.length; i++) {
-        if (i != min_ratio_index && !B.includes(i)) {
+        if (i != min_ratio_index) {
             for (var j = 0; j < A[0].length; j++) {
-                if (j != max_col_index) {
-                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(A[i][j], "*").concat(pivot_element, "-").concat(A[i][max_col_index], "*").concat(A[min_ratio_index][j], ")/").concat(pivot_element)).evaluate()));
+                if (j != max_col_index && !B.includes(j)) {
+                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(A[i][j], ")*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*(").concat(A[min_ratio_index][j], "))/(").concat(pivot_element, ")")).evaluate()));
                 }
             }
-            b1[i] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[i], "*").concat(pivot_element, "-").concat(A[i][max_col_index], "*").concat(b[min_ratio_index], ")/").concat(pivot_element)).evaluate()));
+            b1[i] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(b[i], ")*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*(").concat(b[min_ratio_index], "))/(").concat(pivot_element, ")")).evaluate()));
         }
     }
+    console.table(A);
     for (var i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
             A[i][min_ratio_index] = '0';
@@ -296,7 +302,7 @@ function pivot(N, B, A, b, c, artificial) {
     A1 = A1.map(function (row, _rowIndex) {
         if (_rowIndex == min_ratio_index) {
             row = row.map(function (elem) {
-                return fractional_string(mathjs.fraction(mathjs.parse("".concat(elem, "/").concat(pivot_element)).evaluate()));
+                return fractional_string(mathjs.fraction(mathjs.parse("(".concat(elem, ")/(").concat(pivot_element, ")")).evaluate()));
             });
         }
         return row;
@@ -305,7 +311,9 @@ function pivot(N, B, A, b, c, artificial) {
         row.splice(B[min_ratio_index], 1);
         return row;
     });
-    // // filtering basic and non basic variables.
+    console.log("after");
+    console.table(A);
+    // filtering basic and non basic variables.
     for (var j = 0; j < A1[0].length; j++) {
         var is_basic = true;
         var ones_count = 0;
@@ -316,7 +324,7 @@ function pivot(N, B, A, b, c, artificial) {
                 break;
             }
             if (A1[i][j] == '1') {
-                one_pos = j;
+                one_pos = i;
                 ones_count++;
             }
         }
@@ -360,20 +368,20 @@ function pivot(N, B, A, b, c, artificial) {
             N.push(ind);
         }
     });
-    console.log("A");
-    console.table(A);
-    console.log("b");
-    console.table(b1);
-    console.log("B");
-    console.table(B);
-    console.log("N");
-    console.table(N);
-    console.log("c");
-    console.table(c1);
-    console.log("ARTFICIAL");
-    console.table(artificial);
-    console.table(zj);
-    console.table(cjzj);
+    // console.log("A");
+    // console.table(A);
+    // console.log("b");
+    // console.table(b1);
+    // console.log("B");
+    // console.table(B);
+    // console.log("N");
+    // console.table(N);
+    // console.log("c");
+    // console.table(c1);
+    // console.log("ARTFICIAL");
+    // console.table(artificial);
+    // console.table(zj);
+    // console.table(cjzj);
     return {
         A: A,
         B: B,
