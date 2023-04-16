@@ -1,4 +1,5 @@
-import mathjs, { BigNumber, clone, magneticFluxQuantumDependencies, numericDependencies, parse } from 'mathjs'
+
+const mathjs = require('mathjs');
 
 
 function format_system(A: string[][], b: string[], c: string[]) {
@@ -47,7 +48,6 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     b = formatted_data.b;
     c = formatted_data.c;
 
-    console.table(A);
     let count = 0;
     // handling unrestricted variables.
     unrestricted.forEach((i) => {
@@ -91,7 +91,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
                 }
             })
         }
-        if (sign == '==') {
+        if (sign == '=') {
             B.push(total_variables);
             // push 1 at current row;
             A[index1].push('1');
@@ -107,7 +107,8 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
         total_variables++;
     });
 
-    console.table(A);
+
+
     // each b[i] is postive after this.
     b.forEach((b_val, b_index) => {
         if (b_val[0] == '-') {
@@ -136,37 +137,105 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
 
     });
 
-    console.table(A);
-    console.table(B);
-    console.table(N);
-    console.table(b);
-    console.table(c);
+
 
 
     if (artificial.length > 0) {
-        let c1: number[] = [];
+        let c1: string[] = [];
+
+        /************putting artificial at end of cols starts *********** */
+
+
+
+        let new_A1: string[][] = [];
+
+        // first push col of non artificial var then others 
+
+        A.forEach((row, row_ind) => {
+            let tempArray: string[] = []
+            row.forEach((col, col_ind) => {
+                if (!artificial.includes(col_ind)) {
+                    tempArray.push(col);
+                }
+            });
+            new_A1.push(tempArray);
+        });
+
+        A.forEach((row, row_ind) => {
+            row.forEach((col, col_ind) => {
+                if (artificial.includes(col_ind)) {
+                    new_A1[row_ind].push(col);
+                }
+            });
+        });
+
+        let artificial_count = artificial.length;
+
+        // find old index and remove from basic index
+
+        artificial.forEach((a_val, ind) => {
+            let index = B.findIndex((val) => val == a_val);
+            if (index != -1) {
+                B.splice(index, 1);
+            }
+        });
+
+
+        // fill basic and non basic variables;
+
+        B = [];
+        N = [];
+
+        for (let j = 0; j < new_A1[0].length; j++) {
+            let is_basic = true;
+            let ones_count = 0;
+            let one_pos = -1;
+            for (let i = 0; i < new_A1.length; i++) {
+                if (new_A1[i][j] != '0' && new_A1[i][j] != '1') {
+                    is_basic = false;
+                    break;
+                }
+                if (new_A1[i][j] == '1') {
+                    one_pos = i;
+                    ones_count++;
+                }
+            }
+
+            if (ones_count > 1 || !is_basic) {
+                N.push(j);
+            }
+            else {
+                B[one_pos] = j;
+            }
+        }
+
+
+        // return new index of artificial variable.
+        artificial = artificial.map((val, ind) => {
+            return A[0].length - artificial_count + ind;
+        });
         // setting cofficient of new system
         B.forEach(val => {
             if (artificial.includes(val)) {
-                c1[val] = 1;
+                c1[val] = '-1';
             }
-            else c1[val] = 0;
+            else c1[val] = '0';
         });
 
         N.forEach(val => {
-            c1[val] = 0;
+            c1[val] = '0';
         });
 
-        console.table(c1);
-        console.log(artificial);
+        A = [...new_A1]
+        /************end******************** */
 
-        let new_system_sol = simplex(N, B, artificial, A, b, c);
+
+        let new_system_sol = simplex(N, B, artificial, A, b, c1);
 
         N = new_system_sol.N;
         B = new_system_sol.B;
         A = new_system_sol.A;
         b = new_system_sol.b;
-
         let A1: string[][] = [[]]
 
         A.forEach((row_val, row_index) => {
@@ -184,25 +253,252 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
 }
 
 
-function pivot(N: number[], B: number[], A: string[][], b: string[], c: number[], l: number, e: number) {
+function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[], artificial: number[]) {
 
-    let N1 = Array.from(N);
-    let B1 = Array.from(B);
+
+    let N1: number[] = [];
+    let B1: number[] = [];
     let A1 = Array.from(A);
     let b1 = Array.from(b);
-    let cj: string[] = [];
+    let cjzj: string[] = [];
+    let c1: string[] = []
     let zj: string[] = [];
 
+
+
+
+
     for (let j = 0; j < A[0].length; j++) {
-        let c_sum = 0;
+        let z_sum = '0';
         for (let i = 0; i < A.length; i++) {
-            c_sum += mathjs.parse(`${A[i][j]}*${c[B[i]]}`).evaluate();
+            z_sum = fractional_string(mathjs.fraction(mathjs.parse(`${z_sum}+${A[i][j]}*${c[B[i]]}`).evaluate()))
+        }
+        zj.push(z_sum);
+    }
+
+
+
+    c.forEach((ci, ind) => {
+        cjzj.push(fractional_string(mathjs.fraction(mathjs.parse(`${ci}-${zj[ind]}`).evaluate())))
+    });
+
+
+
+
+    let max_col_index: number = -1;
+    let max_col_value = '-1';
+
+    cjzj.forEach((val, ind) => {
+        if (mathjs.compare(mathjs.parse(`${val}`).evaluate(), mathjs.parse(`${max_col_value}`).evaluate()) == 1) {
+            max_col_index = ind;
+            max_col_value = val;
+        }
+    });
+
+
+
+    if (max_col_index == -1) {
+        artificial.forEach(a_val => {
+            if (B.includes(a_val)) {
+                throw Error("NO SOLUTION FOUND")
+            }
+            return {
+                "OPTIMAL": true,
+                A,
+                B,
+                N,
+                b,
+                artificial,
+                c
+            };
+        })
+    }
+
+
+
+    let min_ratio_index: number = -1;
+    let min_ratio_value: string = '';
+
+    // checking if any postive ratio exists
+    A.forEach((row, ind) => {
+        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0) {
+            min_ratio_index = ind;
+            min_ratio_value = `${b[ind]}/${A[ind][max_col_index]}`;
+        }
+    });
+
+    if (min_ratio_index == -1) {
+        throw Error("UNBOUNDED SOLUTION")
+    }
+
+    // // checking for min positive ratio
+
+    A.forEach((row, ind) => {
+        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse(`${b[ind]}/${row[max_col_index]}`).evaluate()) == 1)) {
+            min_ratio_index = ind;
+            min_ratio_value = `${b[min_ratio_index]}/${A[min_ratio_index][max_col_index]}`;
+        }
+    });
+
+    let pivot_element = A[min_ratio_index][max_col_index];
+    let leaving_var = B[min_ratio_index];
+
+    A1 = Array.from(A);
+    b1 = [...b];
+
+    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse(`${b[min_ratio_index]}/${pivot_element}`).evaluate()));
+    for (let i = 0; i < A.length; i++) {
+        if (i != min_ratio_index && !B.includes(i)) {
+            for (let j = 0; j < A[0].length; j++) {
+                if (j != max_col_index) {
+                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse(`(${A[i][j]}*${pivot_element}-${A[i][max_col_index]}*${A[min_ratio_index][j]})/${pivot_element}`).evaluate()));
+                }
+            }
+            b1[i] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[i]}*${pivot_element}-${A[i][max_col_index]}*${b[min_ratio_index]})/${pivot_element}`).evaluate()));
         }
     }
+
+
+    for (let i = 0; i < A.length; i++) {
+        if (i != min_ratio_index) {
+            A[i][min_ratio_index] = '0';
+        }
+    }
+
+    A1 = A1.map((row, _rowIndex) => {
+        if (_rowIndex == min_ratio_index) {
+            row = row.map(elem => {
+                return fractional_string(mathjs.fraction(mathjs.parse(`${elem}/${pivot_element}`).evaluate()));
+            });
+        }
+        return row;
+    });
+
+    A = A1.map((row) => {
+        row.splice(B[min_ratio_index], 1);
+        return row;
+    });
+
+
+
+    // filtering basic and non basic variables.
+
+    for (let j = 0; j < A1[0].length; j++) {
+
+        let is_basic = true;
+        let ones_count = 0;
+        let one_pos = -1;
+
+        for (let i = 0; i < A1.length; i++) {
+            if (A1[i][j] != '0' && A1[i][j] != '1') {
+                is_basic = false;
+                break;
+            }
+            if (A1[i][j] == '1') {
+                one_pos = i;
+                ones_count++;
+            }
+        }
+
+        if (ones_count > 1 || !is_basic) {
+            N1.push(j);
+        }
+        else {
+            B1[one_pos] = j;
+        }
+    }
+
+
+    if (artificial.includes(leaving_var)) {
+        c1 = [];
+        c.forEach((val, ind) => {
+            if (ind != leaving_var) {
+                c1.push(val);
+            }
+        });
+    }
+
+    let artificial1: number[] = [];
+
+
+    artificial.forEach(a_val => {
+        if (a_val != leaving_var) {
+            artificial1.push(a_val);
+        }
+    });
+
+    artificial1 = artificial1.map((val) => {
+        if (val > leaving_var) {
+            return val - 1;
+        }
+        return val;
+    });
+
+    artificial = [...artificial1];
+
+    B = B1.map((val) => {
+        if (val > leaving_var) {
+            return val - 1;
+        }
+        return val;
+    });
+
+    N = [];
+    A[0].forEach((col, ind) => {
+        if (!B.includes(ind)) {
+            N.push(ind);
+        }
+    })
+
+
+    console.log("A");
+    console.table(A);
+    console.log("b");
+    console.table(b1);
+    console.log("B");
+    console.table(B);
+    console.log("N");
+    console.table(N);
+    console.log("c");
+    console.table(c1);
+    console.log("ARTFICIAL");
+    console.table(artificial);
+
+    console.table(zj);
+    console.table(cjzj);
+
+
+    return {
+        A,
+        B,
+        N,
+        b: b1,
+        artificial,
+        "OPTIMAL": false,
+        c: c1
+    }
+
 
 }
 
 function simplex(N: number[], B: number[], artificial: number[], A: string[][], b: string[], c: string[]) {
+
+    let i = 0;
+    while (i < 5) {
+        let solution = pivot(N, B, A, b, c, artificial);
+        if (solution.A && solution.b && solution.N && solution.B && solution.artificial) {
+            A = solution.A;
+            b = solution.b;
+            B = solution.B;
+            N = solution.B;
+            artificial = solution.artificial;
+            c = solution.c;
+        }
+        i++;
+        if (solution.OPTIMAL == true) {
+            break;
+        }
+    }
 
 
     return { N, B, A, b, c, v: 0 }
@@ -212,6 +508,7 @@ function simplex(N: number[], B: number[], artificial: number[], A: string[][], 
 
 
 function take_input() {
+
     var A: string[][] = [[]];
     var b: string[] = [];
     var c: string[] = [];
@@ -223,16 +520,15 @@ function take_input() {
 
 
     A = [
-        ['1/1', '-0', '3', '4'],
-        ['1', '2', '-3/5', '4'],
-        ['1', '2', '3', '4'],
+        ['3', '1'],
+        ['4', '3'],
+        ['1', '2'],
     ]
-    c = ['1', '2', '-0'];
-    b = ['2', '-3', '-0'];
-    signs = ['<=', '>=', '=='];
-    unrestricted.push(2);
-    unrestricted.push(3);
-
+    c = ['-4', '-1'];
+    b = ['3', '6', '4'];
+    signs = ['=', '>=', '<='];
+    // unrestricted.push(2);
+    // unrestricted.push(3);
     initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c);
 }
 
@@ -250,6 +546,16 @@ function decimal_value(value: string): number {
 }
 
 function fractional_string(value: any) {
+    if (value.s == -1) {
+        if (value.d == value.n) {
+            return '-1'
+        }
+        if (value.d != 1) return `-${value.n}/${value.d}`;
+        return `-${value.n}`
+    }
+    if (value.d == value.n) {
+        return '1'
+    }
     if (value.d != 1) return `${value.n}/${value.d}`;
     return `${value.n}`
 }
@@ -267,7 +573,4 @@ function fraction_value(value: string): { n: number, d?: number } {
 }
 
 
-function compare_value(c: any, d: any) {
-    return mathjs.compare(d, c);
-}
 
