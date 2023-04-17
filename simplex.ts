@@ -63,6 +63,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     A = formatted_data.A;
     b = formatted_data.b;
     c = formatted_data.c;
+    let c_original = [...c]
 
     let count = 0;
     // handling unrestricted variables.
@@ -296,11 +297,41 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
 
     let z_max = '0';
 
+
     B.forEach((elem, ind) => {
         z_max = fractional_string(mathjs.fraction(mathjs.parse(`(${z_max})+(${b[ind]})*(${c[elem]})`).evaluate()))
     });
 
     console.log("Optimal value of z is :", z_max);;
+
+
+    // for unrestricted variables;
+
+
+    if (unrestricted.length) {
+        console.log("Restore original variables : ");
+        count = 0;
+        let X: string[] = [];
+        let X1:string[]=[]
+        
+    
+
+        B.forEach((elem, ind) => {
+            X[elem] = fractional_string(mathjs.fraction(mathjs.parse(b[ind]).evaluate()));
+        });
+
+        for (let i = 0; i < A[0].length; i++) {
+            if (!X[i]) {
+                X[i] = '0';
+            }
+        }
+
+        unrestricted.forEach((elem, ind) => {
+           
+        })
+
+    }
+
 
     B.forEach((elem, ind) => {
         if (elem < total_original_var) {
