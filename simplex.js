@@ -196,42 +196,34 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         });
         A = __spreadArray([], new_A1_1, true);
         /************end******************** */
-        var new_system_sol = simplex(N, B, artificial, A, b, c1_1);
+        console.table(A);
+        console.table(B);
+        console.table(N);
+        console.table(b);
+        var new_system_sol = simplex_phase1(N, B, artificial, A, b, c1_1);
         N = new_system_sol.N;
         B = new_system_sol.B;
         A = new_system_sol.A;
         b = new_system_sol.b;
-        var A1_1 = [[]];
-        A.forEach(function (row_val, row_index) {
-            A1_1[row_index] = [];
-            row_val.forEach(function (col_val, col_index) {
-                if (!artificial.includes(col_index)) {
-                    A1_1[row_index].push(col_val);
-                }
-            });
-        });
+        console.table(A);
+        console.table(B);
+        console.table(N);
+        console.table(b);
+        while (c.length < A[0].length) {
+            c.push('0');
+        }
+        console.table(c);
+        var final_sol = simplex_phase2(N, B, A, b, c);
     }
 }
-function solve_aux(N, B, A, b, c, artificial) {
-    if (artificial.length == 0) {
-        console.log("OPTIMAL");
-        return {
-            A: A,
-            B: B,
-            N: N,
-            b: b,
-            artificial: artificial,
-            optimal: true,
-            c: c
-        };
-    }
+function common_task(N, B, A, b, c) {
     var N1 = [];
     var B1 = [];
     var A1 = Array.from(A);
     var b1 = Array.from(b);
     var cjzj = [];
-    var c1 = [];
     var zj = [];
+    console.log("step");
     for (var j = 0; j < A[0].length; j++) {
         var z_sum = '0';
         for (var i = 0; i < A.length; i++) {
@@ -250,6 +242,16 @@ function solve_aux(N, B, A, b, c, artificial) {
             max_col_value = val;
         }
     });
+    if (max_col_index == -1) {
+        return {
+            A: A1,
+            B: B1,
+            N: N1,
+            b: b1,
+            optimal: true,
+            leaving_var: -1
+        };
+    }
     var min_ratio_index = -1;
     var min_ratio_value = '';
     // checking if any postive ratio exists
@@ -280,10 +282,10 @@ function solve_aux(N, B, A, b, c, artificial) {
         if (i != min_ratio_index) {
             for (var j = 0; j < A[0].length; j++) {
                 if (j != max_col_index && !B.includes(j)) {
-                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(A[i][j], ")*").concat(pivot_element, "-(").concat(A[i][max_col_index], ")*").concat(A[min_ratio_index][j], ")/").concat(pivot_element)).evaluate()));
+                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(A[i][j], ")*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*").concat(A[min_ratio_index][j], ")/(").concat(pivot_element, ")")).evaluate()));
                 }
             }
-            b1[i] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[i], "*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*").concat(b[min_ratio_index], ")/").concat(pivot_element)).evaluate()));
+            b1[i] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(b[i], ")*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*").concat(b[min_ratio_index], ")/(").concat(pivot_element, ")")).evaluate()));
         }
     }
     for (var i = 0; i < A.length; i++) {
@@ -291,7 +293,7 @@ function solve_aux(N, B, A, b, c, artificial) {
             A1[i][min_ratio_index] = '0';
         }
     }
-    ;
+    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[min_ratio_index], ")/(").concat(pivot_element, ")")).evaluate()));
     A1 = A1.map(function (row, _rowIndex) {
         if (_rowIndex == min_ratio_index) {
             row = row.map(function (elem) {
@@ -304,6 +306,7 @@ function solve_aux(N, B, A, b, c, artificial) {
         row.splice(B[min_ratio_index], 1);
         return row;
     });
+    N1 = [];
     // filtering basic and non basic variables.
     for (var j = 0; j < A1[0].length; j++) {
         var is_basic = true;
@@ -326,6 +329,37 @@ function solve_aux(N, B, A, b, c, artificial) {
             B1[one_pos] = j;
         }
     }
+    return {
+        A: A1,
+        B: B1,
+        N: N1,
+        b: b1,
+        leaving_var: leaving_var
+    };
+}
+function phase1(N, B, A, b, c, artificial) {
+    if (artificial.length == 0) {
+        console.log("OPTIMAL");
+        return {
+            A: A,
+            B: B,
+            N: N,
+            b: b,
+            artificial: artificial,
+            optimal: true,
+            c: c
+        };
+    }
+    var aux_sol = common_task(N, B, A, b, c);
+    if (aux_sol.optimal && artificial.length != 0) {
+        throw new Error("No solution found.");
+    }
+    N = aux_sol.N;
+    B = aux_sol.B;
+    A = aux_sol.A;
+    b = aux_sol.b;
+    var c1 = [];
+    var leaving_var = aux_sol.leaving_var;
     if (artificial.includes(leaving_var)) {
         c1 = [];
         c.forEach(function (val, ind) {
@@ -347,7 +381,7 @@ function solve_aux(N, B, A, b, c, artificial) {
         return val;
     });
     artificial = __spreadArray([], artificial1, true);
-    B = B1.map(function (val) {
+    B = B.map(function (val) {
         if (val > leaving_var) {
             return val - 1;
         }
@@ -359,48 +393,51 @@ function solve_aux(N, B, A, b, c, artificial) {
             N.push(ind);
         }
     });
-    console.log("A");
-    console.table(A);
-    console.log("b");
-    console.table(b1);
-    console.log("B");
-    console.table(B);
-    console.log("N");
-    console.table(N);
-    console.log("c");
-    console.table(c1);
-    console.log("ARTFICIAL");
-    console.table(artificial);
-    console.table(zj);
-    console.table(cjzj);
     return {
         A: A,
         B: B,
         N: N,
-        b: b1,
+        b: b,
         artificial: artificial,
         optimal: false,
         c: c1
     };
 }
-function simplex(N, B, artificial, A, b, c) {
+function phase2(N, B, A, b, c) {
+}
+function simplex_phase1(N, B, artificial, A, b, c) {
     while (true) {
-        var solution = solve_aux(N, B, A, b, c, artificial);
+        var solution = phase1(N, B, A, b, c, artificial);
         if (solution.A && solution.b && solution.N && solution.B && solution.artificial) {
             A = solution.A;
             b = solution.b;
             B = solution.B;
-            N = solution.B;
+            N = solution.N;
             artificial = solution.artificial;
             c = solution.c;
         }
-        console.log('optimal ', solution.optimal);
         if (solution.optimal == true) {
-            console.log("OPTIMAL`");
+            console.log("OPTIMAL");
             break;
         }
     }
-    return { N: N, B: B, A: A, b: b, c: c, v: 0 };
+    return { N: N, B: B, A: A, b: b, c: c };
+}
+function simplex_phase2(N, B, A, b, c) {
+    while (true) {
+        var solution = common_task(N, B, A, b, c);
+        if (solution.A && solution.b && solution.N && solution.B) {
+            A = solution.A;
+            b = solution.b;
+            B = solution.B;
+            N = solution.N;
+        }
+        if (solution.optimal == true) {
+            console.log("OPTIMAL");
+            break;
+        }
+    }
+    return { N: N, B: B, A: A, b: b, c: c };
 }
 function take_input() {
     var A = [[]];
