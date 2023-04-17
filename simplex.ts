@@ -1,6 +1,7 @@
 
 const mathjs = require('mathjs');
 
+var iteration = 0;
 
 function format_system(A: string[][], b: string[], c: string[]) {
     A = A.map(row => {
@@ -41,6 +42,21 @@ function format_system(A: string[][], b: string[], c: string[]) {
 }
 
 function initiate_simplex(N: number[], B: number[], artificial: number[], signs: string[], unrestricted: number[], A: string[][], b: string[], c: string[]) {
+
+    console.log("***************");
+    console.log("Simplex two phase method started.");
+    console.log("Given equations are ");
+    let equation_matrix = A.map(row=>[...row]);
+
+    equation_matrix.forEach((row, rowIndex) => {
+        row.push(signs[rowIndex]);
+        row.push(b[rowIndex]);
+    });
+    console.table(equation_matrix);
+
+
+
+
     let total_original_var = A[0].length;
     let formatted_data = format_system(A, b, c);
 
@@ -64,6 +80,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     signs.forEach((sign, index1) => {
 
         if (sign == '<=') {
+            console.log("Add a slack variable in equation no : ", index1 + 1);
             B.push(total_variables);
             // push 1 at current row;
             A[index1].push('1');
@@ -76,6 +93,8 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
         }
 
         if (sign == '>=') {
+            console.log("Add a slack variable and an artificial variable in equation no : ", index1 + 1);
+
             N.push(total_variables);
             total_variables++;
             B.push(total_variables)
@@ -92,6 +111,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
             })
         }
         if (sign == '=') {
+            console.log("Add  an artificial variable in equation no : ", index1 + 1);
             B.push(total_variables);
             // push 1 at current row;
             A[index1].push('1');
@@ -113,6 +133,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     b.forEach((b_val, b_index) => {
         if (b_val[0] == '-') {
             if (decimal_value(b_val) != 0) {
+                console.log("Reverese equation number : ", b_index);
                 b[b_index] = b_val.substring(1);
                 A[b_index].forEach((a_val, a_index) => {
                     // value is negative remove minus sign
@@ -141,6 +162,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
 
 
     if (artificial.length > 0) {
+        console.log("PHASE 1 STARTS NOW..");
         let c1: string[] = [];
 
         /************putting artificial at end of cols starts *********** */
@@ -246,9 +268,14 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
             c.push('0');
         }
         // console.table(c);
+        console.log("PHASE 1 ENDED");
 
     }
 
+    if (artificial.length) {
+        console.log("PHASE 2 STARTS");
+
+    }
     let final_sol = simplex_phase2(N, B, A, b, c);
 
 
@@ -267,27 +294,31 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
 
     let z_max = '0';
 
-    B.forEach((elem,ind) => {
+    B.forEach((elem, ind) => {
         z_max = fractional_string(mathjs.fraction(mathjs.parse(`(${z_max})+(${b[ind]})*(${c[elem]})`).evaluate()))
     });
 
     console.log("Optimal value of z is :", z_max);;
 
-    B.forEach((elem,ind)=>{
-        if(elem<total_original_var){
-            console.log("Optimal value of X"+elem+" is : ",b[ind]);
+    B.forEach((elem, ind) => {
+        if (elem < total_original_var) {
+            console.log("Optimal value of X" + elem + " is : ", b[ind]);
         }
     });
+
+    console.log('THANKS FOR USING SIMPLEX SOLVER BY GOVIND KUMAR KUSHWAHA');
 
 
 }
 
 function common_task(N: number[], B: number[], A: string[][], b: string[], c: string[], artificial?: number[]) {
 
+
+
     let N1: number[] = [];
     let B1: number[] = [];
-    let A1 = Array.from(A);
-    let b1 = Array.from(b);
+    let A1 = A.map(row=>[...row]);
+    let b1 = [...b];
     let cjzj: string[] = [];
     let zj: string[] = [];
 
@@ -303,6 +334,7 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
     c.forEach((ci, ind) => {
         cjzj.push(fractional_string(mathjs.fraction(mathjs.parse(`${ci}-${zj[ind]}`).evaluate())))
     });
+
 
 
     let max_col_index: number = -1;
@@ -329,7 +361,6 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
     }
 
 
-
     let min_ratio_index: number = -1;
     let min_ratio_value: string = '';
 
@@ -344,6 +375,7 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
     if (min_ratio_index == -1) {
         throw Error("UNBOUNDED SOLUTION")
     }
+
 
     // // checking for min positive ratio
 
@@ -363,6 +395,24 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
             }
         }
     });
+
+
+    // solutin print
+
+    iteration++;
+    console.log("ITERATION NO ", iteration);
+    console.log("A : ");
+    console.table(A);
+    console.log("b :");
+    console.table(b);
+    console.log("B : ");
+    console.table(B);
+    console.log("Z(j) :");
+    console.table(zj);
+    console.log('C(j)-Z(j) :');
+    console.table(cjzj);
+    console.log("Pivot column => ", max_col_index);
+    console.log("Pivot row => ", min_ratio_index);
 
 
 
@@ -459,7 +509,6 @@ function phase1(N: number[], B: number[], A: string[][], b: string[], c: string[
 
 
     if (artificial.length == 0) {
-        console.log("OPTIMAL SOLUTION OF PHASE ONE FOUND.");
         return {
             A,
             B,
@@ -557,7 +606,6 @@ function simplex_phase1(N: number[], B: number[], artificial: number[], A: strin
 
 
         if (solution.optimal == true) {
-            console.log("OPTIMAL PHASE 1");
             break;
         }
     }
@@ -578,7 +626,6 @@ function simplex_phase2(N: number[], B: number[], A: string[][], b: string[], c:
 
         }
         if (solution.optimal == true) {
-            console.log("OPTIMAL PHASE 2");
             break;
         }
     }

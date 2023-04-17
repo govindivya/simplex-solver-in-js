@@ -8,6 +8,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 var mathjs = require('mathjs');
+var iteration = 0;
 function format_system(A, b, c) {
     A = A.map(function (row) {
         row = row.map(function (value) {
@@ -42,6 +43,15 @@ function format_system(A, b, c) {
     return { A: A, b: b, c: c };
 }
 function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
+    console.log("***************");
+    console.log("Simplex two phase method started.");
+    console.log("Given equations are ");
+    var equation_matrix = A.map(function (row) { return __spreadArray([], row, true); });
+    equation_matrix.forEach(function (row, rowIndex) {
+        row.push(signs[rowIndex]);
+        row.push(b[rowIndex]);
+    });
+    console.table(equation_matrix);
     var total_original_var = A[0].length;
     var formatted_data = format_system(A, b, c);
     A = formatted_data.A;
@@ -61,6 +71,7 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
     A[0].forEach(function (var_, index) { return N.push(index); });
     signs.forEach(function (sign, index1) {
         if (sign == '<=') {
+            console.log("Add a slack variable in equation no : ", index1 + 1);
             B.push(total_variables);
             // push 1 at current row;
             A[index1].push('1');
@@ -72,6 +83,7 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
             });
         }
         if (sign == '>=') {
+            console.log("Add a slack variable and an artificial variable in equation no : ", index1 + 1);
             N.push(total_variables);
             total_variables++;
             B.push(total_variables);
@@ -88,6 +100,7 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
             });
         }
         if (sign == '=') {
+            console.log("Add  an artificial variable in equation no : ", index1 + 1);
             B.push(total_variables);
             // push 1 at current row;
             A[index1].push('1');
@@ -105,6 +118,7 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
     b.forEach(function (b_val, b_index) {
         if (b_val[0] == '-') {
             if (decimal_value(b_val) != 0) {
+                console.log("Reverese equation number : ", b_index);
                 b[b_index] = b_val.substring(1);
                 A[b_index].forEach(function (a_val, a_index) {
                     // value is negative remove minus sign
@@ -128,6 +142,7 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         }
     });
     if (artificial.length > 0) {
+        console.log("PHASE 1 STARTS NOW..");
         var c1_1 = [];
         /************putting artificial at end of cols starts *********** */
         var new_A1_1 = [];
@@ -206,6 +221,10 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
             c.push('0');
         }
         // console.table(c);
+        console.log("PHASE 1 ENDED");
+    }
+    if (artificial.length) {
+        console.log("PHASE 2 STARTS");
     }
     var final_sol = simplex_phase2(N, B, A, b, c);
     N = final_sol.N;
@@ -229,12 +248,13 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
             console.log("Optimal value of X" + elem + " is : ", b[ind]);
         }
     });
+    console.log('THANKS FOR USING SIMPLEX SOLVER BY GOVIND KUMAR KUSHWAHA');
 }
 function common_task(N, B, A, b, c, artificial) {
     var N1 = [];
     var B1 = [];
-    var A1 = Array.from(A);
-    var b1 = Array.from(b);
+    var A1 = A.map(function (row) { return __spreadArray([], row, true); });
+    var b1 = __spreadArray([], b, true);
     var cjzj = [];
     var zj = [];
     for (var j = 0; j < A[0].length; j++) {
@@ -293,6 +313,21 @@ function common_task(N, B, A, b, c, artificial) {
             }
         }
     });
+    // solutin print
+    iteration++;
+    console.log("ITERATION NO ", iteration);
+    console.log("A : ");
+    console.table(A);
+    console.log("b :");
+    console.table(b);
+    console.log("B : ");
+    console.table(B);
+    console.log("Z(j) :");
+    console.table(zj);
+    console.log('C(j)-Z(j) :');
+    console.table(cjzj);
+    console.log("Pivot column => ", max_col_index);
+    console.log("Pivot row => ", min_ratio_index);
     var pivot_element = A[min_ratio_index][max_col_index];
     var leaving_var = B[min_ratio_index];
     A1 = Array.from(A);
@@ -362,7 +397,6 @@ function common_task(N, B, A, b, c, artificial) {
 }
 function phase1(N, B, A, b, c, artificial) {
     if (artificial.length == 0) {
-        console.log("OPTIMAL SOLUTION OF PHASE ONE FOUND.");
         return {
             A: A,
             B: B,
@@ -438,7 +472,6 @@ function simplex_phase1(N, B, artificial, A, b, c) {
             c = solution.c;
         }
         if (solution.optimal == true) {
-            console.log("OPTIMAL PHASE 1");
             break;
         }
     }
@@ -454,7 +487,6 @@ function simplex_phase2(N, B, A, b, c) {
             N = solution.N;
         }
         if (solution.optimal == true) {
-            console.log("OPTIMAL PHASE 2");
             break;
         }
     }
