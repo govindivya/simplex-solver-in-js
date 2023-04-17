@@ -41,7 +41,7 @@ function format_system(A: string[][], b: string[], c: string[]) {
 }
 
 function initiate_simplex(N: number[], B: number[], artificial: number[], signs: string[], unrestricted: number[], A: string[][], b: string[], c: string[]) {
-
+    let total_original_var = A[0].length;
     let formatted_data = format_system(A, b, c);
 
     A = formatted_data.A;
@@ -229,10 +229,6 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
         A = [...new_A1]
         /************end******************** */
 
-        console.table(A);
-        console.table(B);
-        console.table(N);
-        console.table(b);
 
 
 
@@ -249,15 +245,41 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
         while (c.length < A[0].length) {
             c.push('0');
         }
-        console.table(c);
-
-        let final_sol = simplex_phase2(N, B, A, b, c);
-
-
-
-
+        // console.table(c);
 
     }
+
+    let final_sol = simplex_phase2(N, B, A, b, c);
+
+
+    N = final_sol.N;
+    B = final_sol.B;
+    A = final_sol.A;
+    b = final_sol.b;
+
+    console.log("Final A matrix : ");
+    console.table(A);
+    console.log("Final b matrix: ");
+    console.table(b);
+    console.log("Final basic :");
+    console.table(B);
+
+
+    let z_max = '0';
+
+    B.forEach((elem,ind) => {
+        z_max = fractional_string(mathjs.fraction(mathjs.parse(`(${z_max})+(${b[ind]})*(${c[elem]})`).evaluate()))
+    });
+
+    console.log("Optimal value of z is :", z_max);;
+
+    B.forEach((elem,ind)=>{
+        if(elem<total_original_var){
+            console.log("Optimal value of X"+elem+" is : ",b[ind]);
+        }
+    });
+
+
 }
 
 function common_task(N: number[], B: number[], A: string[][], b: string[], c: string[], artificial?: number[]) {
@@ -278,20 +300,17 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
         zj.push(z_sum);
     }
 
-
-
     c.forEach((ci, ind) => {
         cjzj.push(fractional_string(mathjs.fraction(mathjs.parse(`${ci}-${zj[ind]}`).evaluate())))
     });
-
-
 
 
     let max_col_index: number = -1;
     let max_col_value = '-1';
 
     cjzj.forEach((val, ind) => {
-        if (mathjs.compare(mathjs.parse(`${val}`).evaluate(), mathjs.parse(`${max_col_value}`).evaluate()) == 1) {
+
+        if ((mathjs.parse(val).evaluate() > 0) && (mathjs.compare(mathjs.parse(`${val}`).evaluate(), mathjs.parse(`${max_col_value}`).evaluate()) == 1)) {
             max_col_index = ind;
             max_col_value = val;
         }
@@ -300,10 +319,10 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
 
     if (max_col_index == -1) {
         return {
-            A: A1,
-            B: B1,
-            N: N1,
-            b: b1,
+            A,
+            B,
+            N,
+            b,
             optimal: true,
             leaving_var: -1
         }
@@ -316,9 +335,9 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
 
     // checking if any postive ratio exists
     A.forEach((row, ind) => {
-        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0) {
+        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0 && mathjs.parse(`${b[ind]}`).evaluate() > 0) {
             min_ratio_index = ind;
-            min_ratio_value = `${b[ind]}/${A[ind][max_col_index]}`;
+            min_ratio_value = mathjs.parse(`(${b[ind]})/(${A[ind][max_col_index]})`).evaluate();
         }
     });
 
@@ -327,21 +346,32 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
     }
 
     // // checking for min positive ratio
-    // console.log("A");
-    // console.table(A);
+
+    B = B.map((val, ind) => {
+        if (ind == min_ratio_index) {
+            return max_col_index;
+        }
+        return val;
+    })
+
     A.forEach((row, ind) => {
-        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse(`${b[ind]}/${row[max_col_index]}`).evaluate()) == 1)) {
-            min_ratio_index = ind;
-            min_ratio_value = `${b[min_ratio_index]}/${A[min_ratio_index][max_col_index]}`;
+        let ratio = mathjs.parse(`(${b[ind]})/(${A[ind][max_col_index]})`).evaluate();
+        if (mathjs.parse(`${row[max_col_index]}`).evaluate() != 0 && ratio > 0) {
+            if (mathjs.compare(ratio, min_ratio_value) == -1) {
+                min_ratio_index = ind;
+                min_ratio_value = ratio;
+            }
         }
     });
+
+
 
     let pivot_element = A[min_ratio_index][max_col_index];
     let leaving_var = B[min_ratio_index];
 
+
     A1 = Array.from(A);
     b1 = [...b];
-
 
 
     b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[min_ratio_index]})/${pivot_element}`).evaluate()));
@@ -356,6 +386,7 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
         }
     }
 
+
     for (let i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
             A1[i][min_ratio_index] = '0';
@@ -363,7 +394,6 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
     }
 
     b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[min_ratio_index]})/(${pivot_element})`).evaluate()));
-
 
     A1 = A1.map((row, _rowIndex) => {
         if (_rowIndex == min_ratio_index) {
@@ -412,18 +442,14 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
             B1[one_pos] = j;
         }
     }
-    console.table(A);
-    console.table(B);
-    console.table(N);
-    console.table(b);
-
 
     return {
         A: A1,
         B: B1,
         N: N1,
         b: b1,
-        leaving_var
+        leaving_var,
+        optimal: false,
     }
 }
 
@@ -433,7 +459,7 @@ function phase1(N: number[], B: number[], A: string[][], b: string[], c: string[
 
 
     if (artificial.length == 0) {
-        console.log("OPTIMAL");
+        console.log("OPTIMAL SOLUTION OF PHASE ONE FOUND.");
         return {
             A,
             B,
@@ -446,7 +472,7 @@ function phase1(N: number[], B: number[], A: string[][], b: string[], c: string[
     }
 
 
-    let aux_sol = common_task(N, B, A, b, c,artificial);
+    let aux_sol = common_task(N, B, A, b, c, artificial);
     if (aux_sol.optimal && artificial.length != 0) {
         throw new Error("No solution found.")
     }
@@ -515,9 +541,6 @@ function phase1(N: number[], B: number[], A: string[][], b: string[], c: string[
 }
 
 
-function phase2(N: number[], B: number[], A: string[][], b: string[], c: string[]) {
-
-}
 function simplex_phase1(N: number[], B: number[], artificial: number[], A: string[][], b: string[], c: string[]) {
 
     while (true) {
@@ -534,7 +557,7 @@ function simplex_phase1(N: number[], B: number[], artificial: number[], A: strin
 
 
         if (solution.optimal == true) {
-            console.log("OPTIMAL");
+            console.log("OPTIMAL PHASE 1");
             break;
         }
     }
@@ -552,9 +575,10 @@ function simplex_phase2(N: number[], B: number[], A: string[][], b: string[], c:
             b = solution.b;
             B = solution.B;
             N = solution.N;
+
         }
         if (solution.optimal == true) {
-            console.log("OPTIMAL");
+            console.log("OPTIMAL PHASE 2");
             break;
         }
     }

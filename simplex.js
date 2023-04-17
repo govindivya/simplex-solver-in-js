@@ -42,6 +42,7 @@ function format_system(A, b, c) {
     return { A: A, b: b, c: c };
 }
 function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
+    var total_original_var = A[0].length;
     var formatted_data = format_system(A, b, c);
     A = formatted_data.A;
     b = formatted_data.b;
@@ -196,10 +197,6 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         });
         A = __spreadArray([], new_A1_1, true);
         /************end******************** */
-        console.table(A);
-        console.table(B);
-        console.table(N);
-        console.table(b);
         var new_system_sol = simplex_phase1(N, B, artificial, A, b, c1_1);
         N = new_system_sol.N;
         B = new_system_sol.B;
@@ -208,9 +205,30 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         while (c.length < A[0].length) {
             c.push('0');
         }
-        console.table(c);
-        var final_sol = simplex_phase2(N, B, A, b, c);
+        // console.table(c);
     }
+    var final_sol = simplex_phase2(N, B, A, b, c);
+    N = final_sol.N;
+    B = final_sol.B;
+    A = final_sol.A;
+    b = final_sol.b;
+    console.log("Final A matrix : ");
+    console.table(A);
+    console.log("Final b matrix: ");
+    console.table(b);
+    console.log("Final basic :");
+    console.table(B);
+    var z_max = '0';
+    B.forEach(function (elem, ind) {
+        z_max = fractional_string(mathjs.fraction(mathjs.parse("(".concat(z_max, ")+(").concat(b[ind], ")*(").concat(c[elem], ")")).evaluate()));
+    });
+    console.log("Optimal value of z is :", z_max);
+    ;
+    B.forEach(function (elem, ind) {
+        if (elem < total_original_var) {
+            console.log("Optimal value of X" + elem + " is : ", b[ind]);
+        }
+    });
 }
 function common_task(N, B, A, b, c, artificial) {
     var N1 = [];
@@ -232,17 +250,17 @@ function common_task(N, B, A, b, c, artificial) {
     var max_col_index = -1;
     var max_col_value = '-1';
     cjzj.forEach(function (val, ind) {
-        if (mathjs.compare(mathjs.parse("".concat(val)).evaluate(), mathjs.parse("".concat(max_col_value)).evaluate()) == 1) {
+        if ((mathjs.parse(val).evaluate() > 0) && (mathjs.compare(mathjs.parse("".concat(val)).evaluate(), mathjs.parse("".concat(max_col_value)).evaluate()) == 1)) {
             max_col_index = ind;
             max_col_value = val;
         }
     });
     if (max_col_index == -1) {
         return {
-            A: A1,
-            B: B1,
-            N: N1,
-            b: b1,
+            A: A,
+            B: B,
+            N: N,
+            b: b,
             optimal: true,
             leaving_var: -1
         };
@@ -251,21 +269,28 @@ function common_task(N, B, A, b, c, artificial) {
     var min_ratio_value = '';
     // checking if any postive ratio exists
     A.forEach(function (row, ind) {
-        if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0) {
+        if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0 && mathjs.parse("".concat(b[ind])).evaluate() > 0) {
             min_ratio_index = ind;
-            min_ratio_value = "".concat(b[ind], "/").concat(A[ind][max_col_index]);
+            min_ratio_value = mathjs.parse("(".concat(b[ind], ")/(").concat(A[ind][max_col_index], ")")).evaluate();
         }
     });
     if (min_ratio_index == -1) {
         throw Error("UNBOUNDED SOLUTION");
     }
     // // checking for min positive ratio
-    // console.log("A");
-    // console.table(A);
+    B = B.map(function (val, ind) {
+        if (ind == min_ratio_index) {
+            return max_col_index;
+        }
+        return val;
+    });
     A.forEach(function (row, ind) {
-        if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse("".concat(b[ind], "/").concat(row[max_col_index])).evaluate()) == 1)) {
-            min_ratio_index = ind;
-            min_ratio_value = "".concat(b[min_ratio_index], "/").concat(A[min_ratio_index][max_col_index]);
+        var ratio = mathjs.parse("(".concat(b[ind], ")/(").concat(A[ind][max_col_index], ")")).evaluate();
+        if (mathjs.parse("".concat(row[max_col_index])).evaluate() != 0 && ratio > 0) {
+            if (mathjs.compare(ratio, min_ratio_value) == -1) {
+                min_ratio_index = ind;
+                min_ratio_value = ratio;
+            }
         }
     });
     var pivot_element = A[min_ratio_index][max_col_index];
@@ -326,21 +351,18 @@ function common_task(N, B, A, b, c, artificial) {
             B1[one_pos] = j;
         }
     }
-    console.table(A);
-    console.table(B);
-    console.table(N);
-    console.table(b);
     return {
         A: A1,
         B: B1,
         N: N1,
         b: b1,
-        leaving_var: leaving_var
+        leaving_var: leaving_var,
+        optimal: false,
     };
 }
 function phase1(N, B, A, b, c, artificial) {
     if (artificial.length == 0) {
-        console.log("OPTIMAL");
+        console.log("OPTIMAL SOLUTION OF PHASE ONE FOUND.");
         return {
             A: A,
             B: B,
@@ -404,8 +426,6 @@ function phase1(N, B, A, b, c, artificial) {
         c: c1
     };
 }
-function phase2(N, B, A, b, c) {
-}
 function simplex_phase1(N, B, artificial, A, b, c) {
     while (true) {
         var solution = phase1(N, B, A, b, c, artificial);
@@ -418,7 +438,7 @@ function simplex_phase1(N, B, artificial, A, b, c) {
             c = solution.c;
         }
         if (solution.optimal == true) {
-            console.log("OPTIMAL");
+            console.log("OPTIMAL PHASE 1");
             break;
         }
     }
@@ -434,7 +454,7 @@ function simplex_phase2(N, B, A, b, c) {
             N = solution.N;
         }
         if (solution.optimal == true) {
-            console.log("OPTIMAL");
+            console.log("OPTIMAL PHASE 2");
             break;
         }
     }
