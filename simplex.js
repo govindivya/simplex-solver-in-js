@@ -212,7 +212,19 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         });
     }
 }
-function pivot(N, B, A, b, c, artificial) {
+function solve_aux(N, B, A, b, c, artificial) {
+    if (artificial.length == 0) {
+        console.log("OPTIMAL");
+        return {
+            A: A,
+            B: B,
+            N: N,
+            b: b,
+            artificial: artificial,
+            optimal: true,
+            c: c
+        };
+    }
     var N1 = [];
     var B1 = [];
     var A1 = Array.from(A);
@@ -223,7 +235,7 @@ function pivot(N, B, A, b, c, artificial) {
     for (var j = 0; j < A[0].length; j++) {
         var z_sum = '0';
         for (var i = 0; i < A.length; i++) {
-            z_sum = fractional_string(mathjs.fraction(mathjs.parse("(".concat(z_sum, ")+(").concat(A[i][j], ")*(").concat(c[B[i]], ")")).evaluate()));
+            z_sum = fractional_string(mathjs.fraction(mathjs.parse("".concat(z_sum, "+(").concat(A[i][j], ")*").concat(c[B[i]])).evaluate()));
         }
         zj.push(z_sum);
     }
@@ -238,29 +250,13 @@ function pivot(N, B, A, b, c, artificial) {
             max_col_value = val;
         }
     });
-    if (max_col_index == -1) {
-        artificial.forEach(function (a_val) {
-            if (B.includes(a_val)) {
-                throw Error("NO SOLUTION FOUND");
-            }
-            return {
-                "OPTIMAL": true,
-                A: A,
-                B: B,
-                N: N,
-                b: b,
-                artificial: artificial,
-                c: c
-            };
-        });
-    }
     var min_ratio_index = -1;
     var min_ratio_value = '';
     // checking if any postive ratio exists
     A.forEach(function (row, ind) {
         if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0) {
             min_ratio_index = ind;
-            min_ratio_value = "(".concat(b[ind], ")/(").concat(A[ind][max_col_index], ")");
+            min_ratio_value = "".concat(b[ind], "/").concat(A[ind][max_col_index]);
         }
     });
     if (min_ratio_index == -1) {
@@ -272,37 +268,34 @@ function pivot(N, B, A, b, c, artificial) {
     A.forEach(function (row, ind) {
         if (mathjs.parse("".concat(row[max_col_index])).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse("".concat(b[ind], "/").concat(row[max_col_index])).evaluate()) == 1)) {
             min_ratio_index = ind;
-            min_ratio_value = "(".concat(b[min_ratio_index], ")/(").concat(A[min_ratio_index][max_col_index], ")");
+            min_ratio_value = "".concat(b[min_ratio_index], "/").concat(A[min_ratio_index][max_col_index]);
         }
     });
     var pivot_element = A[min_ratio_index][max_col_index];
     var leaving_var = B[min_ratio_index];
     A1 = Array.from(A);
     b1 = __spreadArray([], b, true);
-    console.log("Before");
-    console.log(min_ratio_index, max_col_index);
-    console.table(A1);
-    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[min_ratio_index], ")/(").concat(pivot_element, ")")).evaluate()));
+    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[min_ratio_index], ")/").concat(pivot_element)).evaluate()));
     for (var i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
             for (var j = 0; j < A[0].length; j++) {
                 if (j != max_col_index && !B.includes(j)) {
-                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(A[i][j], ")*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*(").concat(A[min_ratio_index][j], "))/(").concat(pivot_element, ")")).evaluate()));
+                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(A[i][j], ")*").concat(pivot_element, "-(").concat(A[i][max_col_index], ")*").concat(A[min_ratio_index][j], ")/").concat(pivot_element)).evaluate()));
                 }
             }
-            b1[i] = fractional_string(mathjs.fraction(mathjs.parse("((".concat(b[i], ")*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*(").concat(b[min_ratio_index], "))/(").concat(pivot_element, ")")).evaluate()));
+            b1[i] = fractional_string(mathjs.fraction(mathjs.parse("(".concat(b[i], "*(").concat(pivot_element, ")-(").concat(A[i][max_col_index], ")*").concat(b[min_ratio_index], ")/").concat(pivot_element)).evaluate()));
         }
     }
-    console.table(A);
     for (var i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
-            A[i][min_ratio_index] = '0';
+            A1[i][min_ratio_index] = '0';
         }
     }
+    ;
     A1 = A1.map(function (row, _rowIndex) {
         if (_rowIndex == min_ratio_index) {
             row = row.map(function (elem) {
-                return fractional_string(mathjs.fraction(mathjs.parse("(".concat(elem, ")/(").concat(pivot_element, ")")).evaluate()));
+                return fractional_string(mathjs.fraction(mathjs.parse("".concat(elem, "/(").concat(pivot_element, ")")).evaluate()));
             });
         }
         return row;
@@ -311,8 +304,6 @@ function pivot(N, B, A, b, c, artificial) {
         row.splice(B[min_ratio_index], 1);
         return row;
     });
-    console.log("after");
-    console.table(A);
     // filtering basic and non basic variables.
     for (var j = 0; j < A1[0].length; j++) {
         var is_basic = true;
@@ -368,34 +359,33 @@ function pivot(N, B, A, b, c, artificial) {
             N.push(ind);
         }
     });
-    // console.log("A");
-    // console.table(A);
-    // console.log("b");
-    // console.table(b1);
-    // console.log("B");
-    // console.table(B);
-    // console.log("N");
-    // console.table(N);
-    // console.log("c");
-    // console.table(c1);
-    // console.log("ARTFICIAL");
-    // console.table(artificial);
-    // console.table(zj);
-    // console.table(cjzj);
+    console.log("A");
+    console.table(A);
+    console.log("b");
+    console.table(b1);
+    console.log("B");
+    console.table(B);
+    console.log("N");
+    console.table(N);
+    console.log("c");
+    console.table(c1);
+    console.log("ARTFICIAL");
+    console.table(artificial);
+    console.table(zj);
+    console.table(cjzj);
     return {
         A: A,
         B: B,
         N: N,
         b: b1,
         artificial: artificial,
-        "OPTIMAL": false,
+        optimal: false,
         c: c1
     };
 }
 function simplex(N, B, artificial, A, b, c) {
-    var i = 0;
-    while (i < 5) {
-        var solution = pivot(N, B, A, b, c, artificial);
+    while (true) {
+        var solution = solve_aux(N, B, A, b, c, artificial);
         if (solution.A && solution.b && solution.N && solution.B && solution.artificial) {
             A = solution.A;
             b = solution.b;
@@ -404,8 +394,9 @@ function simplex(N, B, artificial, A, b, c) {
             artificial = solution.artificial;
             c = solution.c;
         }
-        i++;
-        if (solution.OPTIMAL == true) {
+        console.log('optimal ', solution.optimal);
+        if (solution.optimal == true) {
+            console.log("OPTIMAL`");
             break;
         }
     }

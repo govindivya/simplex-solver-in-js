@@ -252,16 +252,13 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     }
 }
 
-
-function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[], artificial: number[]) {
-
+function common_task(N: number[], B: number[], A: string[][], b: string[], c: string[]){
 
     let N1: number[] = [];
     let B1: number[] = [];
     let A1 = Array.from(A);
     let b1 = Array.from(b);
     let cjzj: string[] = [];
-    let c1: string[] = []
     let zj: string[] = [];
 
 
@@ -271,7 +268,7 @@ function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[]
     for (let j = 0; j < A[0].length; j++) {
         let z_sum = '0';
         for (let i = 0; i < A.length; i++) {
-            z_sum = fractional_string(mathjs.fraction(mathjs.parse(`(${z_sum})+(${A[i][j]})*(${c[B[i]]})`).evaluate()))
+            z_sum = fractional_string(mathjs.fraction(mathjs.parse(`${z_sum}+(${A[i][j]})*${c[B[i]]}`).evaluate()))
         }
         zj.push(z_sum);
     }
@@ -297,24 +294,6 @@ function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[]
 
 
 
-    if (max_col_index == -1) {
-        artificial.forEach(a_val => {
-            if (B.includes(a_val)) {
-                throw Error("NO SOLUTION FOUND")
-            }
-            return {
-                "OPTIMAL": true,
-                A,
-                B,
-                N,
-                b,
-                artificial,
-                c
-            };
-        })
-    }
-
-
 
     let min_ratio_index: number = -1;
     let min_ratio_value: string = '';
@@ -323,7 +302,7 @@ function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[]
     A.forEach((row, ind) => {
         if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0) {
             min_ratio_index = ind;
-            min_ratio_value = `(${b[ind]})/(${A[ind][max_col_index]})`;
+            min_ratio_value = `${b[ind]}/${A[ind][max_col_index]}`;
         }
     });
 
@@ -337,7 +316,7 @@ function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[]
     A.forEach((row, ind) => {
         if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse(`${b[ind]}/${row[max_col_index]}`).evaluate()) == 1)) {
             min_ratio_index = ind;
-            min_ratio_value = `(${b[min_ratio_index]})/(${A[min_ratio_index][max_col_index]})`;
+            min_ratio_value = `${b[min_ratio_index]}/${A[min_ratio_index][max_col_index]}`;
         }
     });
 
@@ -348,48 +327,209 @@ function pivot(N: number[], B: number[], A: string[][], b: string[], c: string[]
     b1 = [...b];
 
 
-    console.log("Before");
-    console.log(min_ratio_index,max_col_index);
-    console.table(A1);
 
 
-    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[min_ratio_index]})/(${pivot_element})`).evaluate()));
+    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[min_ratio_index]})/${pivot_element}`).evaluate()));
     for (let i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
             for (let j = 0; j < A[0].length; j++) {
                 if (j != max_col_index && !B.includes(j)) {
-                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse(`((${A[i][j]})*(${pivot_element})-(${A[i][max_col_index]})*(${A[min_ratio_index][j]}))/(${pivot_element})`).evaluate()));
+                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse(`((${A[i][j]})*${pivot_element}-(${A[i][max_col_index]})*${A[min_ratio_index][j]})/${pivot_element}`).evaluate()));
                 }
             }
-            b1[i] = fractional_string(mathjs.fraction(mathjs.parse(`((${b[i]})*(${pivot_element})-(${A[i][max_col_index]})*(${b[min_ratio_index]}))/(${pivot_element})`).evaluate()));
+            b1[i] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[i]}*(${pivot_element})-(${A[i][max_col_index]})*${b[min_ratio_index]})/${pivot_element}`).evaluate()));
         }
     }
 
-console.table(A);
     for (let i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
-            A[i][min_ratio_index] = '0';
+            A1[i][min_ratio_index] = '0';
         }
     }
 
-   
+    ;
 
     A1 = A1.map((row, _rowIndex) => {
         if (_rowIndex == min_ratio_index) {
             row = row.map(elem => {
-                return fractional_string(mathjs.fraction(mathjs.parse(`(${elem})/(${pivot_element})`).evaluate()));
+                return fractional_string(mathjs.fraction(mathjs.parse(`${elem}/(${pivot_element})`).evaluate()));
             });
         }
         return row;
     });
+
+
 
     A = A1.map((row) => {
         row.splice(B[min_ratio_index], 1);
         return row;
     });
 
-    console.log("after");
-    console.table(A);
+
+    // filtering basic and non basic variables.
+
+    for (let j = 0; j < A1[0].length; j++) {
+
+        let is_basic = true;
+        let ones_count = 0;
+        let one_pos = -1;
+
+        for (let i = 0; i < A1.length; i++) {
+            if (A1[i][j] != '0' && A1[i][j] != '1') {
+                is_basic = false;
+                break;
+            }
+            if (A1[i][j] == '1') {
+                one_pos = i;
+                ones_count++;
+            }
+        }
+
+        if (ones_count > 1 || !is_basic) {
+            N1.push(j);
+        }
+        else {
+            B1[one_pos] = j;
+        }
+    }
+
+    return {
+        A:A1,
+        B:B1,
+        N:N1,
+        b:b1  
+    }
+}
+
+
+function phase1(N: number[], B: number[], A: string[][], b: string[], c: string[], artificial: number[]) {
+
+
+    if (artificial.length == 0) {
+        console.log("OPTIMAL");
+        return {
+            A,
+            B,
+            N,
+            b,
+            artificial,
+            optimal: true,
+            c
+        }
+    }
+
+    let N1: number[] = [];
+    let B1: number[] = [];
+    let A1 = Array.from(A);
+    let b1 = Array.from(b);
+    let cjzj: string[] = [];
+    let c1: string[] = []
+    let zj: string[] = [];
+
+
+
+
+
+    for (let j = 0; j < A[0].length; j++) {
+        let z_sum = '0';
+        for (let i = 0; i < A.length; i++) {
+            z_sum = fractional_string(mathjs.fraction(mathjs.parse(`${z_sum}+(${A[i][j]})*${c[B[i]]}`).evaluate()))
+        }
+        zj.push(z_sum);
+    }
+
+
+
+    c.forEach((ci, ind) => {
+        cjzj.push(fractional_string(mathjs.fraction(mathjs.parse(`${ci}-${zj[ind]}`).evaluate())))
+    });
+
+
+
+
+    let max_col_index: number = -1;
+    let max_col_value = '-1';
+
+    cjzj.forEach((val, ind) => {
+        if (mathjs.compare(mathjs.parse(`${val}`).evaluate(), mathjs.parse(`${max_col_value}`).evaluate()) == 1) {
+            max_col_index = ind;
+            max_col_value = val;
+        }
+    });
+
+
+
+
+    let min_ratio_index: number = -1;
+    let min_ratio_value: string = '';
+
+    // checking if any postive ratio exists
+    A.forEach((row, ind) => {
+        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0) {
+            min_ratio_index = ind;
+            min_ratio_value = `${b[ind]}/${A[ind][max_col_index]}`;
+        }
+    });
+
+    if (min_ratio_index == -1) {
+        throw Error("UNBOUNDED SOLUTION")
+    }
+
+    // // checking for min positive ratio
+    // console.log("A");
+    // console.table(A);
+    A.forEach((row, ind) => {
+        if (mathjs.parse(`${row[max_col_index]}`).evaluate() > 0 && (mathjs.parse(b[ind]).evaluate() >= 0) && (mathjs.compare(mathjs.parse(min_ratio_value).evaluate(), mathjs.parse(`${b[ind]}/${row[max_col_index]}`).evaluate()) == 1)) {
+            min_ratio_index = ind;
+            min_ratio_value = `${b[min_ratio_index]}/${A[min_ratio_index][max_col_index]}`;
+        }
+    });
+
+    let pivot_element = A[min_ratio_index][max_col_index];
+    let leaving_var = B[min_ratio_index];
+
+    A1 = Array.from(A);
+    b1 = [...b];
+
+
+
+
+    b1[min_ratio_index] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[min_ratio_index]})/${pivot_element}`).evaluate()));
+    for (let i = 0; i < A.length; i++) {
+        if (i != min_ratio_index) {
+            for (let j = 0; j < A[0].length; j++) {
+                if (j != max_col_index && !B.includes(j)) {
+                    A1[i][j] = fractional_string(mathjs.fraction(mathjs.parse(`((${A[i][j]})*${pivot_element}-(${A[i][max_col_index]})*${A[min_ratio_index][j]})/${pivot_element}`).evaluate()));
+                }
+            }
+            b1[i] = fractional_string(mathjs.fraction(mathjs.parse(`(${b[i]}*(${pivot_element})-(${A[i][max_col_index]})*${b[min_ratio_index]})/${pivot_element}`).evaluate()));
+        }
+    }
+
+    for (let i = 0; i < A.length; i++) {
+        if (i != min_ratio_index) {
+            A1[i][min_ratio_index] = '0';
+        }
+    }
+
+    ;
+
+    A1 = A1.map((row, _rowIndex) => {
+        if (_rowIndex == min_ratio_index) {
+            row = row.map(elem => {
+                return fractional_string(mathjs.fraction(mathjs.parse(`${elem}/(${pivot_element})`).evaluate()));
+            });
+        }
+        return row;
+    });
+
+
+
+    A = A1.map((row) => {
+        row.splice(B[min_ratio_index], 1);
+        return row;
+    });
+
 
     // filtering basic and non basic variables.
 
@@ -461,21 +601,21 @@ console.table(A);
     })
 
 
-    // console.log("A");
-    // console.table(A);
-    // console.log("b");
-    // console.table(b1);
-    // console.log("B");
-    // console.table(B);
-    // console.log("N");
-    // console.table(N);
-    // console.log("c");
-    // console.table(c1);
-    // console.log("ARTFICIAL");
-    // console.table(artificial);
+    console.log("A");
+    console.table(A);
+    console.log("b");
+    console.table(b1);
+    console.log("B");
+    console.table(B);
+    console.log("N");
+    console.table(N);
+    console.log("c");
+    console.table(c1);
+    console.log("ARTFICIAL");
+    console.table(artificial);
 
-    // console.table(zj);
-    // console.table(cjzj);
+    console.table(zj);
+    console.table(cjzj);
 
 
     return {
@@ -484,7 +624,7 @@ console.table(A);
         N,
         b: b1,
         artificial,
-        "OPTIMAL": false,
+        optimal: false,
         c: c1
     }
 
@@ -493,9 +633,9 @@ console.table(A);
 
 function simplex(N: number[], B: number[], artificial: number[], A: string[][], b: string[], c: string[]) {
 
-    let i = 0;
-    while (i < 5) {
-        let solution = pivot(N, B, A, b, c, artificial);
+    while (true) {
+        let solution = phase1(N, B, A, b, c, artificial);
+
         if (solution.A && solution.b && solution.N && solution.B && solution.artificial) {
             A = solution.A;
             b = solution.b;
@@ -504,8 +644,11 @@ function simplex(N: number[], B: number[], artificial: number[], A: string[][], 
             artificial = solution.artificial;
             c = solution.c;
         }
-        i++;
-        if (solution.OPTIMAL == true) {
+
+
+        console.log('optimal ', solution.optimal);
+        if (solution.optimal == true) {
+            console.log("OPTIMAL`");
             break;
         }
     }
