@@ -46,7 +46,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     console.log("***************");
     console.log("Simplex two phase method started.");
     console.log("Given equations are ");
-    let equation_matrix = A.map(row=>[...row]);
+    let equation_matrix = A.map(row => [...row]);
 
     equation_matrix.forEach((row, rowIndex) => {
         row.push(signs[rowIndex]);
@@ -68,9 +68,11 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     // handling unrestricted variables.
     unrestricted.forEach((i) => {
         A = A.map(row => {
+            console.log("Replace variable X" + i + " with  new variable X" + i + " -X" + (i + 1) + " and replace other variables e.g X4 by X5 , X5 by X6 and so on. ");
             row.splice(i + 1 + count, 0, `-${row[i + count]}`);
             return row;
         });
+        c.splice(i + 1 + count, 0, `-${c[i + count]}`);
         count++
     });
     var total_variables = A[0].length;
@@ -317,7 +319,7 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
 
     let N1: number[] = [];
     let B1: number[] = [];
-    let A1 = A.map(row=>[...row]);
+    let A1 = A.map(row => [...row]);
     let b1 = [...b];
     let cjzj: string[] = [];
     let zj: string[] = [];

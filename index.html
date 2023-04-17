@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Simplex Method Solver</title>
+</head>
+
+<style>
+    #constraints input,
+    #objective-function input {
+        padding: 10px 5px;
+        width: 70px;
+        height: auto;
+        outline: none;
+        border-color: gray;
+    }
+    input:disabled{
+        width: 95px;
+    }
+
+    input {
+        padding: 10px 5px;
+        margin-bottom: 20px;
+        width: 100px;
+        height: auto;
+        outline: none;
+        border-color: gray;
+    }
+
+    button {
+        background-color: rgb(102, 102, 238);
+        padding: 15px 30px;
+        outline: none;
+        border: white;
+
+    }
+    
+</style>
+
+<body>
+    <h1>Simplex Method Solver</h1>
+
+    <label for="num-variables">Number of Variables:</label>
+    <input type="number" id="num-variables" name="num-variables" min="1" required><br>
+
+    <label for="num-constraints">Number of Constraints:</label>
+    <input type="number" id="num-constraints" name="num-constraints" min="1" required><br>
+
+    <h2>Objective Function</h2>
+    <p>Enter the coefficients of the objective function:</p>
+    <div id="objective-function">
+    </div>
+    <p>Enter the constraints:</p>
+    <div id="constraints">
+    </div>
+    <button onclick="solve()">Solve</button>
+
+
+    <script>
+        function createTable(container, rows, columns, id) {
+            var table = document.createElement('table');
+            table.id = id;
+            for (var i = 0; i < rows; i++) {
+                var row = document.createElement('tr');
+                for (var j = 0; j < columns; j++) {
+                    var cell = document.createElement('td');
+                    var input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `input${i}${j}`
+                    input.required = true;
+                    cell.appendChild(input);
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+            container.appendChild(table);
+        }
+        function createHeader(container, columns) {
+            var table = document.createElement('table');
+            var row = document.createElement('tr');
+            for (var j = 0; j < columns; j++) {
+                var cell = document.createElement('td');
+                var input = document.createElement('input');
+                cell.appendChild(input);
+                input.disabled = true;
+                input.style.border = 'none';
+                input.style.outline = 'none'
+                input.style.textAlign = 'center'
+                
+                if (j < columns - 3) {
+                    input.value = 'X' + j;
+                }
+                else if (j == columns - 3) {
+                    input.value = 'contraint'
+                }
+                else if (j == columns - 2) {
+                    input.value = 'b'
+                }
+                else {
+                    input.value = 'unrestricted'
+                }
+                row.appendChild(cell);
+            }
+            table.appendChild(row);
+            container.appendChild(table);
+        }
+        var numVariables = document.getElementById('num-variables');
+        var numConstraints = document.getElementById('num-constraints');
+        var objectiveFunctionContainer = document.getElementById('objective-function');
+
+        var totalConstraints = 0;
+        var totalVariables = 0;
+
+        var constraintsContainer = document.getElementById('constraints');
+
+        numVariables.addEventListener('change', function () {
+            objectiveFunctionContainer.innerHTML = '';
+            totalVariables = numVariables.value;
+            createTable(objectiveFunctionContainer, 1, numVariables.value, 'zMatrix')
+        });
+
+        numConstraints.addEventListener('change', function () {
+            totalConstraints = numConstraints.value;
+            constraintsContainer.innerHTML = ''
+            if (totalConstraints && totalVariables) {
+                createHeader(constraintsContainer, Number(numVariables.value) + 3)
+                createTable(constraintsContainer, numConstraints.value, Number(numVariables.value) + 2, 'constMatrix');
+            }
+        });
+        function solve(e) {
+            var constMatrix = document.getElementById('constMatrix');
+            var zMatrix = document.getElementById('zMatrix');
+            var A = [];
+            var b = [];
+            // var c 
+        }
+
+    </script>
+</body>
+
+</html>
