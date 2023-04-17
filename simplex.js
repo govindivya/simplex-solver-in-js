@@ -205,10 +205,6 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         B = new_system_sol.B;
         A = new_system_sol.A;
         b = new_system_sol.b;
-        console.table(A);
-        console.table(B);
-        console.table(N);
-        console.table(b);
         while (c.length < A[0].length) {
             c.push('0');
         }
@@ -216,14 +212,13 @@ function initiate_simplex(N, B, artificial, signs, unrestricted, A, b, c) {
         var final_sol = simplex_phase2(N, B, A, b, c);
     }
 }
-function common_task(N, B, A, b, c) {
+function common_task(N, B, A, b, c, artificial) {
     var N1 = [];
     var B1 = [];
     var A1 = Array.from(A);
     var b1 = Array.from(b);
     var cjzj = [];
     var zj = [];
-    console.log("step");
     for (var j = 0; j < A[0].length; j++) {
         var z_sum = '0';
         for (var i = 0; i < A.length; i++) {
@@ -302,10 +297,12 @@ function common_task(N, B, A, b, c) {
         }
         return row;
     });
-    A = A1.map(function (row) {
-        row.splice(B[min_ratio_index], 1);
-        return row;
-    });
+    if (artificial && artificial.length) {
+        A1 = A1.map(function (row) {
+            row.splice(B[min_ratio_index], 1);
+            return row;
+        });
+    }
     N1 = [];
     // filtering basic and non basic variables.
     for (var j = 0; j < A1[0].length; j++) {
@@ -329,6 +326,10 @@ function common_task(N, B, A, b, c) {
             B1[one_pos] = j;
         }
     }
+    console.table(A);
+    console.table(B);
+    console.table(N);
+    console.table(b);
     return {
         A: A1,
         B: B1,
@@ -350,7 +351,7 @@ function phase1(N, B, A, b, c, artificial) {
             c: c
         };
     }
-    var aux_sol = common_task(N, B, A, b, c);
+    var aux_sol = common_task(N, B, A, b, c, artificial);
     if (aux_sol.optimal && artificial.length != 0) {
         throw new Error("No solution found.");
     }

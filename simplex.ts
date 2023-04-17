@@ -243,18 +243,15 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
         A = new_system_sol.A;
         b = new_system_sol.b;
 
-        console.table(A);
-        console.table(B);
-        console.table(N);
-        console.table(b);
 
 
-        while(c.length<A[0].length){
+
+        while (c.length < A[0].length) {
             c.push('0');
         }
         console.table(c);
 
-        let final_sol = simplex_phase2(N,B,A,b,c);
+        let final_sol = simplex_phase2(N, B, A, b, c);
 
 
 
@@ -263,7 +260,7 @@ function initiate_simplex(N: number[], B: number[], artificial: number[], signs:
     }
 }
 
-function common_task(N: number[], B: number[], A: string[][], b: string[], c: string[]) {
+function common_task(N: number[], B: number[], A: string[][], b: string[], c: string[], artificial?: number[]) {
 
     let N1: number[] = [];
     let B1: number[] = [];
@@ -272,7 +269,6 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
     let cjzj: string[] = [];
     let zj: string[] = [];
 
-    console.log("step1");
 
     for (let j = 0; j < A[0].length; j++) {
         let z_sum = '0';
@@ -282,7 +278,6 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
         zj.push(z_sum);
     }
 
-    console.log("step2");
 
 
     c.forEach((ci, ind) => {
@@ -381,10 +376,13 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
 
 
 
-    A = A1.map((row) => {
-        row.splice(B[min_ratio_index], 1);
-        return row;
-    });
+    if (artificial && artificial.length) {
+        A1 = A1.map((row) => {
+            row.splice(B[min_ratio_index], 1);
+            return row;
+        });
+    }
+
 
 
     N1 = []
@@ -414,6 +412,11 @@ function common_task(N: number[], B: number[], A: string[][], b: string[], c: st
             B1[one_pos] = j;
         }
     }
+    console.table(A);
+    console.table(B);
+    console.table(N);
+    console.table(b);
+
 
     return {
         A: A1,
@@ -443,7 +446,7 @@ function phase1(N: number[], B: number[], A: string[][], b: string[], c: string[
     }
 
 
-    let aux_sol = common_task(N, B, A, b, c);
+    let aux_sol = common_task(N, B, A, b, c,artificial);
     if (aux_sol.optimal && artificial.length != 0) {
         throw new Error("No solution found.")
     }
