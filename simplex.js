@@ -154,7 +154,6 @@ function initial_feasible(A, b) {
 }
 function handle_artificial(N, B, artificial, A, b, c) {
     if (artificial.length > 0) {
-        console.log("PHASE 1 STARTS NOW..");
         var c1_1 = [];
         /************putting artificial at end of A  *********** */
         var new_A1_1 = [];
@@ -261,6 +260,7 @@ function initiate_simplex(artificial, signs, unrestricted, A, b, c) {
     A = initial_feasible_system.A;
     b = initial_feasible_system.b;
     if (artificial.length > 0) {
+        console.log("PHASE 1 STARTS NOW..");
         var phase1_sol = handle_artificial(N, B, artificial, A, b, c);
         A = phase1_sol.A;
         N = phase1_sol.N;
@@ -268,10 +268,13 @@ function initiate_simplex(artificial, signs, unrestricted, A, b, c) {
         c = phase1_sol.c;
         b = phase1_sol.b;
     }
+    else {
+        while (c.length < A[0].length) {
+            c.push('0');
+        }
+    }
     if (artificial.length) {
         console.log("Phase 2");
-        console.table(artificial);
-        console.log(artificial.length);
     }
     var final_sol = simplex_phase2_iterator(N, B, A, b, c);
     N = final_sol.N;
@@ -315,12 +318,6 @@ function initiate_simplex(artificial, signs, unrestricted, A, b, c) {
     console.log('THANKS FOR USING SIMPLEX SOLVER BY GOVIND KUMAR KUSHWAHA');
 }
 function common_task(N, B, A, b, c, artificial) {
-    console.log("common task called");
-    console.table(A);
-    console.table(b);
-    console.table(c);
-    console.table(artificial);
-    console.table(B);
     var N1 = [];
     var B1 = __spreadArray([], B, true);
     var A1 = A.map(function (row) { return __spreadArray([], row, true); });
@@ -345,7 +342,6 @@ function common_task(N, B, A, b, c, artificial) {
             max_col_value = val;
         }
     });
-    console.table(cjzj);
     if (max_col_index == -1) {
         return {
             A: A,
@@ -381,6 +377,14 @@ function common_task(N, B, A, b, c, artificial) {
             }
         }
     });
+    console.log("Z(j) is given by");
+    console.table(zj);
+    console.log("C(j)-Z(j) is given by ");
+    console.table(cjzj);
+    console.log("Pivot row ", min_ratio_index);
+    console.log("Pivot column ", max_col_index);
+    console.log("Outgoing variable ", B[min_ratio_index]);
+    console.log("Incoming variable ", max_col_index);
     B1 = B1.map(function (val, ind) {
         if (ind == min_ratio_index) {
             return max_col_index;
@@ -408,13 +412,15 @@ function common_task(N, B, A, b, c, artificial) {
     }
     for (var i = 0; i < A.length; i++) {
         if (i != min_ratio_index) {
-            A1[i][min_ratio_index] = '0';
+            A1[i][max_col_index] = '0';
         }
         else {
-            A1[i][min_ratio_index] = '1';
+            A1[i][max_col_index] = '1';
         }
     }
-    if (artificial && artificial.length && !B1.includes(min_ratio_index)) {
+    if (artificial && artificial.length && artificial.includes(B[min_ratio_index])) {
+        // remove artificial column from a which is going from basis
+        console.log("Remove ", B[min_ratio_index], " variable from basis");
         A1 = A1.map(function (row) {
             row.splice(B[min_ratio_index], 1);
             return row;
@@ -443,24 +449,6 @@ function common_task(N, B, A, b, c, artificial) {
             B1[one_pos] = j;
         }
     }
-    console.log(B1);
-    // console.table(A1);
-    // console.table(b1);
-    // console.log("Pivot column => ", max_col_index);
-    // console.log("Pivot row => ", min_ratio_index);
-    // console.log("B");
-    // console.table(B);
-    // console.log("B1");
-    // console.table(B1);
-    // console.log("CJ");
-    // console.table(cjzj);
-    console.log("common task returning");
-    console.log("pivot", pivot_element);
-    console.table(A1);
-    console.table(b1);
-    console.table(B1);
-    console.log("leaving", leaving_var);
-    console.table(artificial);
     return {
         A: A1,
         B: B1,
@@ -472,12 +460,6 @@ function common_task(N, B, A, b, c, artificial) {
     };
 }
 function simplex_phase1(N, B, A, b, c, artificial) {
-    console.log("Phase 1 simplex called");
-    console.table(A);
-    console.table(b);
-    console.table(c);
-    console.table(artificial);
-    console.table(B);
     if (artificial.length == 0) {
         return {
             A: A,
@@ -537,12 +519,6 @@ function simplex_phase1(N, B, A, b, c, artificial) {
             N.push(ind);
         }
     });
-    console.log("pahse 1 returning");
-    console.table(A);
-    console.table(b);
-    console.table(c1);
-    console.table(artificial);
-    console.table(B);
     return {
         A: A,
         B: B,
@@ -563,6 +539,14 @@ function simplex_phase1_iterator(N, B, artificial, A, b, c) {
             N = solution.N;
             artificial = solution.artificial;
             c = solution.c;
+            console.log("A :");
+            console.table(A);
+            console.log("b");
+            console.table(b);
+            console.log("c ");
+            console.table(c);
+            console.log("B ");
+            console.table(B);
         }
         if (solution.optimal == true) {
             break;
@@ -593,13 +577,13 @@ function take_input() {
     var signs = [];
     var unrestricted = [];
     A = [
-        ['3', '1'],
-        ['4', '3'],
-        ['1', '2'],
+        ['3', '5', '2'],
+        ['4', '4', '4'],
+        ['2', '4', '5'],
     ];
-    c = ['-4', '-1'];
-    b = ['3', '6', '4'];
-    signs = ['=', '>=', '<='];
+    c = ['5', '10', '8'];
+    b = ['60', '5', '80'];
+    signs = ['<=', '>=', '<='];
     // unrestricted.push(2);
     // unrestricted.push(3);
     initiate_simplex(artificial, signs, unrestricted, A, b, c);
