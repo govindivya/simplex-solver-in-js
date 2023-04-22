@@ -9,6 +9,8 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 var mathjs = require('mathjs');
 var iteration = 0;
+var original_artificial = {};
+var original_slack = {};
 function format_system(A, b, c) {
     A = A.map(function (row) {
         row = row.map(function (value) {
@@ -66,11 +68,14 @@ function handle_unrestricted(unrestricted, A, c) {
     return { A: A, c: c, count: count };
 }
 function add_slack_artificial(B, N, A, signs, artificial, total_variables) {
+    original_artificial = [];
+    original_slack = [];
     // iterate over each row and depending of signs add slack or artificial variable in A;
     signs.forEach(function (sign, index1) {
         if (sign == '<=') {
             console.log("Add a slack variable in equation no : ", index1 + 1);
             B.push(total_variables);
+            original_slack.push({});
             // push 1 at current row;
             A[index1].push('1');
             // push 0 at all other row
@@ -151,6 +156,19 @@ function initial_feasible(A, b) {
         A: A,
         b: b
     };
+}
+function remember_variables(A, artificial, c) {
+    var slack_count = A[0].length - artificial.length - c.length;
+    var art_count = artificial.length;
+    var total_count = A[0].length;
+    var original_count = A[0].length - art_count - slack_count;
+    for (var i = original_count; i < original_count + slack_count; i++) {
+        original_slack["s".concat(i)] = i;
+    }
+    for (var i = original_count + slack_count; i < total_count; i++) {
+        original_artificial["a".concat(i)] = i;
+    }
+    console.log(original_artificial, original_slack);
 }
 function handle_artificial(N, B, artificial, A, b, c) {
     if (artificial.length > 0) {
@@ -259,6 +277,7 @@ function initiate_simplex(artificial, signs, unrestricted, A, b, c) {
     var initial_feasible_system = initial_feasible(A, b);
     A = initial_feasible_system.A;
     b = initial_feasible_system.b;
+    remember_variables(A, artificial, c);
     if (artificial.length > 0) {
         console.log("PHASE 1 STARTS NOW..");
         var phase1_sol = handle_artificial(N, B, artificial, A, b, c);

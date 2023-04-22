@@ -2,7 +2,8 @@
 const mathjs = require('mathjs');
 
 var iteration = 0;
-
+let original_artificial: object = {};
+let original_slack: object = {}
 function format_system(A: string[][], b: string[], c: string[]) {
     A = A.map(row => {
         row = row.map(value => {
@@ -73,13 +74,15 @@ function handle_unrestricted(unrestricted: number[], A: string[][], c: string[])
 
 
 function add_slack_artificial(B: number[], N: number[], A: string[][], signs: string[], artificial: number[], total_variables: number) {
-
+    original_artificial = [];
+    original_slack = []
     // iterate over each row and depending of signs add slack or artificial variable in A;
     signs.forEach((sign, index1) => {
 
         if (sign == '<=') {
             console.log("Add a slack variable in equation no : ", index1 + 1);
             B.push(total_variables);
+            original_slack.push({});
             // push 1 at current row;
             A[index1].push('1');
             // push 0 at all other row
@@ -95,7 +98,7 @@ function add_slack_artificial(B: number[], N: number[], A: string[][], signs: st
 
             N.push(total_variables);
             total_variables++;
-            B.push(total_variables)
+            B.push(total_variables);
             // push 1 at current row;
             A[index1].push('-1');
             A[index1].push('1');
@@ -169,6 +172,19 @@ function initial_feasible(A: string[][], b: string[]) {
 
 }
 
+function remember_variables(A: string[][], artificial: number[], c: string[]) {
+    let slack_count = A[0].length - artificial.length - c.length;
+    let art_count = artificial.length;
+    let total_count = A[0].length;
+    let original_count = A[0].length - art_count - slack_count;
+    for (let i = original_count; i < original_count + slack_count; i++) {
+        original_slack[`s${i}`] = i;
+    }
+    for (let i = original_count + slack_count; i < total_count; i++) {
+        original_artificial[`a${i}`] = i;
+    }
+    console.log(original_artificial,original_slack);
+}
 
 function handle_artificial(N: number[], B: number[], artificial: number[], A: string[][], b: string[], c: string[]) {
 
@@ -272,7 +288,6 @@ function handle_artificial(N: number[], B: number[], artificial: number[], A: st
         }
 
     }
-
     return { N, B, A, b, c }
 
 }
@@ -314,6 +329,7 @@ function initiate_simplex(artificial: number[], signs: string[], unrestricted: n
     A = initial_feasible_system.A;
     b = initial_feasible_system.b;
 
+    remember_variables(A, artificial, c);
 
 
     if (artificial.length > 0) {
@@ -384,7 +400,7 @@ function initiate_simplex(artificial: number[], signs: string[], unrestricted: n
         }
 
         unrestricted.forEach((elem, ind) => {
-
+            
         })
 
     }
