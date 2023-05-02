@@ -317,23 +317,37 @@ function initiate_simplex(artificial, signs, unrestricted, A, b, c) {
         console.log("Restore original variables : ");
         count = 0;
         var X_1 = [];
-        var X1 = [];
+        var X1_1 = [];
         B.forEach(function (elem, ind) {
             X_1[elem] = fractional_string(mathjs.fraction(mathjs.parse(b[ind]).evaluate()));
         });
-        for (var i = 0; i < A[0].length; i++) {
-            if (!X_1[i]) {
-                X_1[i] = '0';
+        for (var i_1 = 0; i_1 < A[0].length; i_1++) {
+            if (!X_1[i_1]) {
+                X_1[i_1] = '0';
             }
         }
-        unrestricted.forEach(function (elem, ind) {
+        var i_2 = 0;
+        X_1.forEach(function (elem, ind) {
+            if (unrestricted.includes(ind)) {
+                X1_1.push(fractional_string(mathjs.fraction(mathjs.parse("".concat(X_1[i_2 + count], "-").concat(X_1[i_2 + count + 1])).evaluate())));
+                count++;
+            }
+            else {
+                X1_1.push(X_1[i_2 + count]);
+            }
+            i_2++;
+        });
+        X1_1.forEach(function (elem, ind) {
+            console.log("Optimal value of X" + ind + " is : ", elem);
         });
     }
-    B.forEach(function (elem, ind) {
-        if (elem < total_original_var) {
-            console.log("Optimal value of X" + elem + " is : ", b[ind]);
-        }
-    });
+    else {
+        B.forEach(function (elem, ind) {
+            if (elem < total_original_var) {
+                console.log("Optimal value of X" + elem + " is : ", b[ind]);
+            }
+        });
+    }
     console.log('THANKS FOR USING SIMPLEX SOLVER BY GOVIND KUMAR KUSHWAHA');
 }
 function common_task(N, B, A, b, c, artificial) {
@@ -595,14 +609,33 @@ function take_input() {
     var artificial = [];
     var signs = [];
     var unrestricted = [];
+
+    // A = [
+    //     ['2', '1', '2'],
+    //     ['4', '4', '4'],
+    //     ['2', '4', '5'],
+    // ];
+    // c = ['5', '10', '8'];
+    // b = ['60', '5', '80'];
+    // signs = ['<=', '>=', '<='];
+
     A = [
-        ['3', '5', '2'],
-        ['4', '4', '4'],
-        ['2', '4', '5'],
+        ['8', '6', '1'],
+        ['4', '2', '3/2'],
+        ['2', '3/2', '1/2'],
     ];
-    c = ['5', '10', '8'];
-    b = ['60', '5', '80'];
-    signs = ['<=', '>=', '<='];
+    c = ['60', '30', '20'];
+    b = ['48', '20', '8'];
+    signs = ['<=', '<=', '<='];
+
+    // A = [
+    //     ['1', '1'],
+    //     ['1','-1']
+    // ];
+    // c = ['-2','3'];
+    // b = ['4', '6'];
+    // signs = ['<=','<='];
+
     // unrestricted.push(2);
     // unrestricted.push(3);
     initiate_simplex(artificial, signs, unrestricted, A, b, c);

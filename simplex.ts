@@ -766,7 +766,7 @@ function take_input() {
     var unrestricted: number[] = []
 
     A = [
-        ['3', '5', '2'],
+        ['2', '1', '2'],
         ['4', '4', '4'],
         ['2', '4', '5'],
     ]
