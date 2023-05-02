@@ -183,7 +183,7 @@ function remember_variables(A: string[][], artificial: number[], c: string[]) {
     for (let i = original_count + slack_count; i < total_count; i++) {
         original_artificial[`a${i}`] = i;
     }
-    console.log(original_artificial,original_slack);
+    console.log(original_artificial, original_slack);
 }
 
 function handle_artificial(N: number[], B: number[], artificial: number[], A: string[][], b: string[], c: string[]) {
@@ -399,18 +399,33 @@ function initiate_simplex(artificial: number[], signs: string[], unrestricted: n
             }
         }
 
-        unrestricted.forEach((elem, ind) => {
-            
-        })
+        let i = 0;
+        X.forEach((elem, ind) => {
+            if (unrestricted.includes(ind)) {
+                X1.push(fractional_string(mathjs.fraction(mathjs.parse(`${X[i + count]}-${X[i + count + 1]}`).evaluate())));
+                count++;
+            }
+            else {
+                X1.push(X[i + count]);
+            }
+            i++;
+
+        });
+
+        X1.forEach((elem, ind) => {
+            console.log("Optimal value of X" + ind + " is : ", elem);
+        });
 
     }
 
+    else {
+        B.forEach((elem, ind) => {
+            if (elem < total_original_var) {
+                console.log("Optimal value of X" + elem + " is : ", b[ind]);
+            }
+        });
 
-    B.forEach((elem, ind) => {
-        if (elem < total_original_var) {
-            console.log("Optimal value of X" + elem + " is : ", b[ind]);
-        }
-    });
+    }
 
     console.log('THANKS FOR USING SIMPLEX SOLVER BY GOVIND KUMAR KUSHWAHA');
 
