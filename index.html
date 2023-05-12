@@ -14,7 +14,17 @@
         outline: none;
         border-color: gray;
     }
-    input:disabled{
+
+    select {
+        margin-bottom: 20px;
+        padding: 10px 5px;
+        width: 70px;
+        height: auto;
+        outline: none;
+        border-color: gray;
+    }
+
+    input:disabled {
         width: 95px;
     }
 
@@ -34,7 +44,6 @@
         border: white;
 
     }
-    
 </style>
 
 <body>
@@ -57,19 +66,39 @@
 
 
     <script>
-        function createTable(container, rows, columns, id) {
+        var A = [];
+        var b = [];
+        var c = [];
+        var unrestricted = new Set();
+        var rowCount = 0;
+        var colCount = 0;
+        function createTable(container, rows, columns, id, select) {
             var table = document.createElement('table');
+            rowCount = rows;
+            colCount = columns;
             table.id = id;
             for (var i = 0; i < rows; i++) {
                 var row = document.createElement('tr');
                 for (var j = 0; j < columns; j++) {
-                    var cell = document.createElement('td');
-                    var input = document.createElement('input');
-                    input.type = 'number';
-                    input.id = `input${i}${j}`
-                    input.required = true;
-                    cell.appendChild(input);
-                    row.appendChild(cell);
+
+                    if (j == columns - 2 && select) {
+                        var cell = document.createElement('td');
+                        cell.innerHTML = `<select id="select${i}${j}"><option value="<="><=</option><option value="=">=</option><option value=">=">=</option>`;
+                        row.appendChild(cell)
+                    }
+                    else {
+                        var cell = document.createElement('td');
+                        var input = document.createElement('input');
+                        input.type = 'number';
+                        input.id = `input${i}${j}`
+                        input.required = true;
+                        input.style.borderWidth = '1px';
+                        input.style.outline = 'none'
+                        input.style.textAlign = 'center'
+                        cell.appendChild(input);
+                        row.appendChild(cell);
+                    }
+
                 }
                 table.appendChild(row);
             }
@@ -83,26 +112,60 @@
                 var input = document.createElement('input');
                 cell.appendChild(input);
                 input.disabled = true;
-                input.style.border = 'none';
+                input.style.borderWidth = '1px';
                 input.style.outline = 'none'
-                input.style.textAlign = 'center'
-                
-                if (j < columns - 3) {
+                input.style.textAlign = 'center';
+
+
+                if (j < columns - 2) {
                     input.value = 'X' + j;
                 }
-                else if (j == columns - 3) {
-                    input.value = 'contraint'
-                }
                 else if (j == columns - 2) {
-                    input.value = 'b'
+                    input.value = 'constraints'
                 }
-                else {
-                    input.value = 'unrestricted'
+                else if (j == columns - 1) {
+                    input.value = 'b'
                 }
                 row.appendChild(cell);
             }
             table.appendChild(row);
             container.appendChild(table);
+        }
+        function createUnrestricted(container, columns) {
+            var table = document.createElement('table');
+            var heading = document.createElement('div');
+            heading.innerHTML = 'Select unrestricted variables';
+            container.appendChild(heading);
+
+            var row = document.createElement('tr');
+            for (var j = 0; j < columns; j++) {
+                var cell = document.createElement('td');
+                var input = document.createElement('input');
+                input.addEventListener('change', handleUnrestricted);
+                cell.appendChild(input);
+                input.style.borderWidth = '1px';
+                input.style.outline = 'none'
+                input.style.textAlign = 'center';
+                input.type = 'checkbox';
+                input.value = j;
+                let label = document.createElement('span');
+                label.innerHTML = 'x' + j;
+                row.appendChild(label)
+                row.appendChild(cell);
+            }
+            table.appendChild(row);
+            container.appendChild(table);
+        }
+
+        function handleUnrestricted(e) {
+            console.log(e.target.checked);
+            if (e.target.checked) {
+                unrestricted.add(Number(e.target.value))
+            }
+            else {
+                unrestricted.delete(Number(e.target.value))
+            }
+            console.log(unrestricted);
         }
         var numVariables = document.getElementById('num-variables');
         var numConstraints = document.getElementById('num-constraints');
@@ -123,16 +186,33 @@
             totalConstraints = numConstraints.value;
             constraintsContainer.innerHTML = ''
             if (totalConstraints && totalVariables) {
-                createHeader(constraintsContainer, Number(numVariables.value) + 3)
-                createTable(constraintsContainer, numConstraints.value, Number(numVariables.value) + 2, 'constMatrix');
+                createHeader(constraintsContainer, Number(numVariables.value) + 2);
+                createTable(constraintsContainer, numConstraints.value, Number(numVariables.value) + 2, 'constMatrix', true);
+                createUnrestricted(constraintsContainer, Number(numVariables.value));
             }
         });
+
         function solve(e) {
-            var constMatrix = document.getElementById('constMatrix');
-            var zMatrix = document.getElementById('zMatrix');
-            var A = [];
-            var b = [];
-            // var c 
+            A = [];
+            b = [];
+            c = [];
+            var unrestricted1 = Array.from(unrestricted);
+            var constraints = []
+            for (let i = 0; i < rowCount; i++) {
+                A.push([])
+                for (let j = 0; j < colCount; j++) {
+                    // if (j = colCount - 2) {
+                    //     let value = document.getElementById(`select${i}${j}`).value;
+                    //     unrestricted1.push(value);
+                    //     console.log(value);
+                    // }
+
+                }
+            }
+            console.table(A);
+            console.table(b);
+            console.table(constraints);
+            console.table(unrestricted1);
         }
 
     </script>
